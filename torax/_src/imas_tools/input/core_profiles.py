@@ -164,10 +164,10 @@ def plasma_composition_from_IMAS(
   # value set to hydrogenic ions.
   if main_ions_symbols is None:
     main_ions_symbols = constants.HYDROGENIC_IONS
-    validate_main_ions = False
+  # main_ions_symbols explicitly provided: validate ions presence in IDS.
   else:
-    validate_main_ions = True
-  _validate_ids_ions(parsed_ions, main_ions_symbols, validate_main_ions)
+    _validate_main_ions_presence(parsed_ions, main_ions_symbols)
+  _validate_ids_ions(parsed_ions)
 
   Z_eff = (
       time_array,
@@ -233,11 +233,8 @@ def _get_time_and_radial_arrays(
 
 def _validate_ids_ions(
     parsed_ions: list[str],
-    main_ion_symbols: Collection[str],
-    validate_main_ions: bool,
 ) -> None:
-  """Check if all ions are recognized and expected_main_ions present in the IDS."""
-  # Check if IDS ion symbol is valid.
+  """Checks if all parsed ions are recognized."""
   for ion in parsed_ions:
     # ion is casted to str to avoid issues with imas string types.
     if str(ion) not in constants.ION_PROPERTIES_DICT.keys():
@@ -247,21 +244,26 @@ def _validate_ids_ions(
               "typing or add the ion to the excluded_impurities."
           )
       )
-  # Check presence of main_ion_symbols in the IDS if explicitly provided.
-  if validate_main_ions:
-    for ion in main_ion_symbols:
-      if ion not in constants.ION_PROPERTIES_DICT.keys():
-        raise (
-            KeyError(
-                f"{ion} is not a valid symbol of a TORAX valid ion. Please"
-                " check typing of main_ion_symbols."
-            )
-        )
-      if ion not in parsed_ions:
-        raise (
-            ValueError(
-                f"The expected main ion {ion} cannot be found in the input"
-                " IDS or has no valid data. \n Please check that the IDS is"
-                " properly filled"
-            )
-        )
+
+
+def _validate_main_ions_presence(
+    parsed_ions: list[str],
+    main_ion_symbols: Collection[str],
+) -> None:
+  """Checks that items in main_ion_symbols are present in the IDS."""
+  for ion in main_ion_symbols:
+    if ion not in constants.ION_PROPERTIES_DICT.keys():
+      raise (
+          KeyError(
+              f"{ion} is not a valid symbol of a TORAX valid ion. Please"
+              " check typing of main_ion_symbols."
+          )
+      )
+    if ion not in parsed_ions:
+      raise (
+          ValueError(
+              f"The expected main ion {ion} cannot be found in the input"
+              " IDS or has no valid data. \n Please check that the IDS is"
+              " properly filled"
+          )
+      )
