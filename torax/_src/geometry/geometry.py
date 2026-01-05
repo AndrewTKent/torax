@@ -258,8 +258,11 @@ class Geometry:
 
   @property
   def drho_norm(self) -> array_typing.Array:
-    r"""Grid size for rho_norm [dimensionless]."""
-    return jnp.array(self.torax_mesh.dx)
+    r"""Cell widths for rho_norm grid [dimensionless].
+
+    Returns an array of cell widths (difference between adjacent face centers).
+    """
+    return jnp.diff(self.torax_mesh.face_centers)
 
   @property
   def rho_face(self) -> array_typing.Array:
@@ -302,7 +305,7 @@ class Geometry:
   @property
   def drho(self) -> array_typing.Array:
     """Grid size for rho [m]."""
-    return self.drho_norm * self.rho_b
+    return self.drho_norm * jnp.expand_dims(self.rho_b, axis=-1)
 
   @property
   def rho_b(self) -> array_typing.FloatScalar:
