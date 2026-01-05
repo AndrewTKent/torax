@@ -19,13 +19,18 @@ import numpy as np
 from torax._src.fvm import cell_variable
 
 
+def _make_face_centers(dr: float, num_cells: int) -> np.ndarray:
+  """Creates uniform face centers from dr and number of cells."""
+  return np.linspace(0.0, num_cells * dr, num=num_cells + 1)
+
+
 class CellVariableTest(parameterized.TestCase):
 
   def test_unconstrained_left_raises_an_error(self):
     with self.assertRaisesRegex(ValueError, 'left_face_constraint'):
       cell_variable.CellVariable(
           value=jnp.array([1.0, 2.0, 5.0, 3.0]),
-          dr=jnp.array(0.1),
+          face_centers=jnp.array(_make_face_centers(0.1, 4)),
           left_face_constraint=None,
           left_face_grad_constraint=None,
       )
@@ -34,7 +39,7 @@ class CellVariableTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, 'right_face_constraint'):
       cell_variable.CellVariable(
           value=jnp.array([1.0, 2.0, 5.0, 3.0]),
-          dr=jnp.array(0.1),
+          face_centers=jnp.array(_make_face_centers(0.1, 4)),
           right_face_constraint=None,
           right_face_grad_constraint=None,
       )
@@ -43,7 +48,7 @@ class CellVariableTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, 'left_face_constraint'):
       cell_variable.CellVariable(
           value=jnp.array([1.0, 2.0, 5.0, 3.0]),
-          dr=jnp.array(0.1),
+          face_centers=jnp.array(_make_face_centers(0.1, 4)),
           left_face_constraint=jnp.array(1.0),
           left_face_grad_constraint=jnp.array(1.0),
       )
@@ -52,7 +57,7 @@ class CellVariableTest(parameterized.TestCase):
     with self.assertRaisesRegex(ValueError, 'right_face_constraint'):
       cell_variable.CellVariable(
           value=jnp.array([1.0, 2.0, 5.0, 3.0]),
-          dr=jnp.array(0.1),
+          face_centers=jnp.array(_make_face_centers(0.1, 4)),
           right_face_constraint=jnp.array(1.0),
           right_face_grad_constraint=jnp.array(1.0),
       )
@@ -60,7 +65,7 @@ class CellVariableTest(parameterized.TestCase):
   def test_face_grad_unconstrained_no_input(self):
     var = cell_variable.CellVariable(
         value=jnp.array([1.0, 2.0, 5.0, 3.0]),
-        dr=jnp.array(0.1),
+        face_centers=jnp.array(_make_face_centers(0.1, 4)),
     )
 
     grad = var.face_grad()
@@ -71,7 +76,7 @@ class CellVariableTest(parameterized.TestCase):
   def test_face_grad_unconstrained_with_input(self):
     var = cell_variable.CellVariable(
         value=jnp.array([1.0, 2.0, 5.0, 3.0]),
-        dr=jnp.array(0.1),
+        face_centers=jnp.array(_make_face_centers(0.1, 4)),
     )
 
     grad = var.face_grad(x=jnp.array([4.0, 1.0, 5.0, 3.0]))
@@ -82,7 +87,7 @@ class CellVariableTest(parameterized.TestCase):
   def test_face_grad_grad_constraint(self):
     var = cell_variable.CellVariable(
         value=jnp.array([1.0, 2.0, 5.0, 3.0]),
-        dr=jnp.array(0.1),
+        face_centers=jnp.array(_make_face_centers(0.1, 4)),
         left_face_grad_constraint=jnp.array(1.0),
         right_face_grad_constraint=jnp.array(2.0),
     )
@@ -95,7 +100,7 @@ class CellVariableTest(parameterized.TestCase):
     dr = 0.1
     var = cell_variable.CellVariable(
         value=jnp.array([1.0, 2.0, 5.0, 3.0]),
-        dr=jnp.array(dr),
+        face_centers=jnp.array(_make_face_centers(dr, 4)),
         left_face_constraint=jnp.array(2.0),
         left_face_grad_constraint=None,
         right_face_constraint=jnp.array(5.0),
@@ -139,7 +144,7 @@ class CellVariableTest(parameterized.TestCase):
     """Tests face_value method for unbatched and batched cases."""
     var = cell_variable.CellVariable(
         value=jnp.array(value),
-        dr=jnp.array(dr),
+        face_centers=jnp.array(_make_face_centers(dr, len(value))),
         left_face_constraint=jnp.array(left_face_constraint)
         if left_face_constraint is not None
         else None,
@@ -190,7 +195,7 @@ class CellVariableTest(parameterized.TestCase):
   ):
     var = cell_variable.CellVariable(
         value=jnp.array(value),
-        dr=jnp.array(dr),
+        face_centers=jnp.array(_make_face_centers(dr, len(value))),
         left_face_constraint=jnp.array(left_face_constraint)
         if left_face_constraint is not None
         else None,
@@ -224,7 +229,7 @@ class CellVariableTest(parameterized.TestCase):
         right_face_grad_constraint=jnp.array(right_face_grad_constraint)
         if right_face_grad_constraint is not None
         else None,
-        dr=jnp.array(dr),
+        face_centers=jnp.array(_make_face_centers(dr, len(value))),
     )
     cell_plus_boundaries = var.cell_plus_boundaries()
     np.testing.assert_array_equal(
@@ -235,13 +240,13 @@ class CellVariableTest(parameterized.TestCase):
       dict(
           testcase_name='near_identical_values',
           var1_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0]),
               'right_face_constraint': np.array(1.0),
               'right_face_grad_constraint': None,
           },
           var2_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0 + 1e-7]),
               'right_face_constraint': np.array(1.0),
               'right_face_grad_constraint': None,
@@ -251,13 +256,13 @@ class CellVariableTest(parameterized.TestCase):
       dict(
           testcase_name='near_identical_right_face_constraint',
           var1_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0]),
               'right_face_constraint': np.array(1.0),
               'right_face_grad_constraint': None,
           },
           var2_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0]),
               'right_face_constraint': np.array(1.0 + 1e-7),
               'right_face_grad_constraint': None,
@@ -267,13 +272,13 @@ class CellVariableTest(parameterized.TestCase):
       dict(
           testcase_name='not_near_identical_values',
           var1_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0]),
               'right_face_constraint': np.array(1.0),
               'right_face_grad_constraint': None,
           },
           var2_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0 + 1e-5]),
               'right_face_constraint': np.array(1.0),
               'right_face_grad_constraint': None,
@@ -283,13 +288,13 @@ class CellVariableTest(parameterized.TestCase):
       dict(
           testcase_name='not_near_identical_right_face_constraint',
           var1_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0]),
               'right_face_constraint': np.array(1.0),
               'right_face_grad_constraint': None,
           },
           var2_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0]),
               'right_face_constraint': np.array(1.0 + 1e-5),
               'right_face_grad_constraint': None,
@@ -299,13 +304,13 @@ class CellVariableTest(parameterized.TestCase):
       dict(
           testcase_name='near_identical_right_face_constraint_low_precision',
           var1_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0]),
               'right_face_constraint': np.array(1.0),
               'right_face_grad_constraint': None,
           },
           var2_kwargs={
-              'dr': np.array(0.4),
+              'face_centers': _make_face_centers(0.4, 1),
               'value': np.array([1.0]),
               'right_face_constraint': np.array(1.0 + 1e-5),
               'right_face_grad_constraint': None,
@@ -364,7 +369,7 @@ class CellVariableTest(parameterized.TestCase):
   ):
     cell_var = cell_variable.CellVariable(
         value=jnp.array([1.0, 2.0, 5.0, 3.0]),
-        dr=jnp.array(0.1),
+        face_centers=jnp.array(_make_face_centers(0.1, 4)),
         left_face_constraint=left_face_constraint,
         left_face_grad_constraint=left_face_grad_constraint,
         right_face_constraint=right_face_constraint,

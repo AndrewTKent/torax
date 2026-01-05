@@ -103,10 +103,8 @@ class CoreProfiles:
   def pressure_thermal_e(self) -> cell_variable.CellVariable:
     """Electron thermal pressure [Pa]."""
     return cell_variable.CellVariable(
-        value=self.n_e.value
-        * self.T_e.value
-        * constants.CONSTANTS.keV_to_J,
-        dr=self.n_e.dr,
+        value=self.n_e.value * self.T_e.value * constants.CONSTANTS.keV_to_J,
+        face_centers=self.n_e.face_centers,
         right_face_constraint=self.n_e.right_face_constraint
         * self.T_e.right_face_constraint
         * constants.CONSTANTS.keV_to_J,
@@ -120,7 +118,7 @@ class CoreProfiles:
         value=self.T_i.value
         * constants.CONSTANTS.keV_to_J
         * (self.n_i.value + self.n_impurity.value),
-        dr=self.n_i.dr,
+        face_centers=self.n_i.face_centers,
         right_face_constraint=self.T_i.right_face_constraint
         * constants.CONSTANTS.keV_to_J
         * (
@@ -135,7 +133,7 @@ class CoreProfiles:
     """Total thermal pressure [Pa]."""
     return cell_variable.CellVariable(
         value=self.pressure_thermal_e.value + self.pressure_thermal_i.value,
-        dr=self.pressure_thermal_e.dr,
+        face_centers=self.pressure_thermal_e.face_centers,
         right_face_constraint=self.pressure_thermal_e.right_face_constraint
         + self.pressure_thermal_i.right_face_constraint,
         right_face_grad_constraint=None,

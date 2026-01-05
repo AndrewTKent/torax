@@ -43,7 +43,8 @@ class CellVariable:
 
   Attributes:
     value: Value of this variable at each cell grid point.
-    dr: Distance between cell centers.
+    face_centers: Locations of the face centers. This array should have length
+      len(value) + 1. Supports both uniform and non-uniform grids.
     left_face_constraint: An optional scalar specifying the value of the
       leftmost face. Defaults to None, signifying no constraint. The user can
       modify this field at any time, but when face_grad is called exactly one of
@@ -56,8 +57,9 @@ class CellVariable:
     right_face_grad_constraint: Analogous to left_face_grad_constraint but for
       the right face, see left_face_grad_constraint.
   """
+
   value: jt.Float[chex.Array, 'cell']
-  dr: jt.Float[chex.Array, '']
+  face_centers: jt.Float[chex.Array, 'face']
   left_face_constraint: jt.Float[chex.Array, ''] | None = None
   right_face_constraint: jt.Float[chex.Array, ''] | None = None
   left_face_grad_constraint: jt.Float[chex.Array, ''] | None = (
@@ -68,11 +70,6 @@ class CellVariable:
   )
   # Can't make the above default values be jax zeros because that would be a
   # call to jax before absl.app.run
-
-  @property
-  def face_centers(self) -> jt.Float[chex.Array, 'face']:
-    """Locations of the face centers."""
-    return jnp.linspace(0.0, len(self.value) * self.dr, num=len(self.value) + 1)
 
   @property
   def cell_centers(self) -> jt.Float[chex.Array, 'cell']:
