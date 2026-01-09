@@ -46,6 +46,11 @@ def sources_from_IMAS(
     The updated fields read from the IDS that can be used to completely or
     partially fill the `sources` section of a TORAX `CONFIG`.
   """
+  # Checks that the IDS is of the correct type.
+  if not ids.metadata.name == "core_sources":
+    raise TypeError(
+        f"Expected core_sources IDS, got {ids.metadata.name} IDS."
+    )
   sources_output = {}
   for source in ids.source:
     source_name = source.identifier.name
