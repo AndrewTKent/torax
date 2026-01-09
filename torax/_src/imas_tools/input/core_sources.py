@@ -18,14 +18,13 @@ from typing import Any, Final
 from imas import ids_struct_array
 from imas import ids_toplevel
 import numpy as np
-
-from torax._src.imas_tools.input.utils import get_time_and_radial_arrays
+from torax._src.imas_tools.input import loader 
 
 _ALL_AFFECTED_PROFILES: Final[Sequence[str]] = (
     "psi",
-    "ne",
-    "temp_ion",
-    "temp_el",
+    "n_e",
+    "T_i",
+    "T_e",
 )
 
 
@@ -50,8 +49,8 @@ def sources_from_IMAS(
   sources_output = {}
   for source in ids.source:
     source_name = source.identifier.name
-    # Basic output structure to be replaced by parsing of the different sources
-    # building the different runtime parameters.
+    # TODO: Basic output structure to be replaced by parsing of the different
+    # sources building the expected structure for TORAX sources runtime_params.
     sources_output[source_name] = _extract_source_profiles(
         source,
         t_initial=t_initial,
@@ -78,7 +77,7 @@ def _extract_source_profiles(
   Returns:
       A dictionary containing the extracted profiles.
   """
-  profiles_1d, rhon_array, time_array = get_time_and_radial_arrays(
+  profiles_1d, rhon_array, time_array = loader.get_time_and_radial_arrays(
       source, t_initial
   )
   profiles = {}
@@ -87,17 +86,19 @@ def _extract_source_profiles(
 
   # Extract current profile
   if "psi" in affected_profiles:
+    # Switch sign due to the difference between input COCOS conventions
+    # and TORAX ones
     profiles["current"] = [-1.0 * profile.j_parallel for profile in profiles_1d]
 
   # Extract heating profiles
-  if "temp_ion" in affected_profiles:
+  if "T_i" in affected_profiles:
     profiles["ion_heat"] = [profile.total_ion_energy for profile in profiles_1d]
-  if "temp_el" in affected_profiles:
+  if "T_e" in affected_profiles:
     profiles["elec_heat"] = [
         profile.electrons.energy for profile in profiles_1d
     ]
   # Extract fuelling profile
-  if "ne" in affected_profiles:
+  if "n_e" in affected_profiles:
     profiles["particle"] = [
         profile.electrons.particles for profile in profiles_1d
     ]
